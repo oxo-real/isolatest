@@ -27,7 +27,7 @@
 
 download_location="$HOME/download_"
 target_device=$1
-
+clear
 
 # check for parameter validity
 
@@ -47,6 +47,21 @@ if [[ -d $target_device ]] ; then
 fi
 
 
+# warning
+lsblk --tree -o name,uuid,fstype,label,size,fsuse%,fsused,path,mountpoint
+echo
+printf "WARNING! about to \033[1mirreversible overwrite\033[0m $target_device\n"
+read -p "continue? (y/N) " -n 1 -r
+
+if [[ $REPLY =~ ^[yY]$ ]] ; then
+	clear
+else
+	echo
+	printf "aborted by user\n"
+	printf "exiting\n"
+	exit
+fi
+
 # configuring the mirrorlist
 
 sudo cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.old
@@ -60,9 +75,12 @@ file1=$(curl -s $source1/sha1sums.txt | grep -o 'archlinux-.*-x86_64.iso')
 # download
 
 echo
-printf "$file1\ndownloading from $source1\nwriting to $download_location\n"
+printf "archiso image version:	$file1\n"
+printf "downloading from:	$source1\n"
+printf "writing to:		$download_location\n"
 cd $download_location
 echo
+printf "downloading\n"
 curl -O "$source1/$file1"
 
 
@@ -77,7 +95,7 @@ sha1_soll=$(curl -s $source1/sha1sums.txt | grep $file1 | cut -d ' ' -f 1)
 
 ## report to human
 echo
-printf "checksum comparison"
+printf "checksum comparison\n"
 printf "sha1 soll: $sha1_soll\n"
 printf "sha1 ist:  $sha1_ist\n"
 
@@ -89,8 +107,8 @@ if [ $checksum == 0 ]; then
 	printf "no checksum match error\n"
 	printf "exiting\n"
 	exit
-	elif [ $checksum == 1 ]; then
-		printf "checksum match\n"
+	elif [ $checksum == 1 ] ; then
+		printf "identical checksums\n"
 fi
 
 # write to usb
@@ -98,4 +116,6 @@ echo
 printf "writing image to $target_device\n"
 sudo dd if=$download_location/$file1 of=$target_device bs=4M status=progress oflag=sync
 
-printf "ready\n"
+echo
+printf "process complete\n"
+echo
