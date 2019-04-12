@@ -47,10 +47,14 @@ if [[ -d $target_device ]] ; then
 fi
 
 
-# warning
+# info and warning
+printf "isolatest  (c) 2019  cytopyge\n"
+echo
+## device info for human
 lsblk --tree -o name,uuid,fstype,label,size,fsuse%,fsused,path,mountpoint
 echo
 printf "WARNING! about to \033[1mirreversible overwrite\033[0m $target_device\n"
+echo
 read -p "continue? (y/N) " -n 1 -r
 
 if [[ $REPLY =~ ^[yY]$ ]] ; then
@@ -96,15 +100,15 @@ sha1_soll=$(curl -s $source1/sha1sums.txt | grep $file1 | cut -d ' ' -f 1)
 ## report to human
 echo
 printf "checksum comparison\n"
-printf "sha1 soll: $sha1_soll\n"
-printf "sha1 ist:  $sha1_ist\n"
+printf "soll sha1: $sha1_soll\n"
+printf "ist  sha1:  $sha1_ist\n"
 
 ## checksum comparison and set status
 [ "$sha1_soll" == "$sha1_ist" ] || checksum=0 # no checksum match
 [ "$sha1_soll" == "$sha1_ist" ] && checksum=1 # checksum match
 
 if [ $checksum == 0 ]; then
-	printf "no checksum match error\n"
+	printf "checksum error\n"
 	printf "exiting\n"
 	exit
 	elif [ $checksum == 1 ] ; then
