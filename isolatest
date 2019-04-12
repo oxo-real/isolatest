@@ -39,7 +39,7 @@ if [[ $? -eq 0 ]] ; then
 	exit
 fi
 
-## valid directory path
+## no valid directory path
 if [[ -d $target_device ]] ; then
 	printf "$target_device is a valid path\n"
 	printf "exiting\n"
@@ -48,6 +48,7 @@ fi
 
 
 # configuring the mirrorlist
+
 sudo cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.old
 echo
 printf "selecting fastest mirror\n"
@@ -68,21 +69,21 @@ curl -O "$source1/$file1"
 # sha1 checksum verification
 
 ## derive sha1 ist
-sha1_file1_soll=$(openssl dgst -sha1 $file1 | sed 's/^.*= //')
-printf "$sha1_file1_soll" > $file1.sha1
+sha1_ist=$(openssl dgst -sha1 $file1 | sed 's/^.*= //')
+printf "$sha1_ist" > $file1.sha1_ist
 
 ## derive sha1 soll
-sha1_ist=$(curl -s $source1/sha1sums.txt | grep $file1 | cut -d ' ' -f 1)
+sha1_soll=$(curl -s $source1/sha1sums.txt | grep $file1 | cut -d ' ' -f 1)
 
 ## report to human
 echo
 printf "checksum comparison"
-printf "sha1 soll: $sha1_ist\n"
-printf "sha1 ist:  $sha1_file1_soll\n"
+printf "sha1 soll: $sha1_soll\n"
+printf "sha1 ist:  $sha1_ist\n"
 
 ## checksum comparison and set status
-[ "$sha1_file1_soll" == "$sha1_ist" ] || checksum=0 # no checksum match
-[ "$sha1_file1_soll" == "$sha1_ist" ] && checksum=1 # checksum match
+[ "$sha1_soll" == "$sha1_ist" ] || checksum=0 # no checksum match
+[ "$sha1_soll" == "$sha1_ist" ] && checksum=1 # checksum match
 
 if [ $checksum == 0 ]; then
 	printf "no checksum match error\n"
