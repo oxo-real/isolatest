@@ -1,0 +1,100 @@
+#!/bin/bash
+#
+##
+###  _           _       _            _
+### (_)___  ___ | | __ _| |_ ___  ___| |_
+### | / __|/ _ \| |/ _` | __/ _ \/ __| __|
+### | \__ \ (_) | | (_| | ||  __/\__ \ |_
+### |_|___/\___/|_|\__,_|\__\___||___/\__|
+###
+###  _ _|_ _ ._    _  _
+### (_\/|_(_)|_)\/(_|(/_
+###   /      |  /  _|
+###
+### isolatest
+### arch linux iso
+### create bootable device with the latest archiso
+### (c) 2019 cytopyge
+###
+##
+#
+
+
+# usage: isolatest [path_to_target_device]
+
+
+# initialization
+
+download_location="$HOME/download_"
+target_device=$1
+
+
+# check for parameter validity
+
+## not a mountpoint
+mountpoint -q $target_device
+if [[ $? -eq 0 ]] ; then
+	printf "$target_device is a mountpoint\n"
+	printf "exiting\n"
+	exit
+fi
+
+## valid directory path
+if [[ -d $target_device ]] ; then
+	printf "$target_device is a valid path\n"
+	printf "exiting\n"
+	exit
+fi
+
+
+# configuring the mirrorlist
+sudo cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.old
+echo
+printf "selecting fastest mirror\n"
+sudo reflector --verbose --country 'Netherlands' -l 5 --sort rate --save /etc/pacman.d/mirrorlist
+source1=$(grep = /etc/pacman.d/mirrorlist | sed -n 1p | awk -F '= ' '{print $2}' | sed 's/$.*/iso\/latest/')
+file1=$(curl -s $source1/sha1sums.txt | grep -o 'archlinux-.*-x86_64.iso')
+
+
+# download
+
+echo
+printf "$file1\ndownloading from $source1\nwriting to $download_location\n"
+cd $download_location
+echo
+curl -O "$source1/$file1"
+
+
+# sha1 checksum verification
+
+## derive sha1 ist
+sha1_file1_soll=$(openssl dgst -sha1 $file1 | sed 's/^.*= //')
+printf "$sha1_file1_soll" > $file1.sha1
+
+## derive sha1 soll
+sha1_ist=$(curl -s $source1/sha1sums.txt | grep $file1 | cut -d ' ' -f 1)
+
+## report to human
+echo
+printf "checksum comparison"
+printf "sha1 soll: $sha1_ist\n"
+printf "sha1 ist:  $sha1_file1_soll\n"
+
+## checksum comparison and set status
+[ "$sha1_file1_soll" == "$sha1_ist" ] || checksum=0 # no checksum match
+[ "$sha1_file1_soll" == "$sha1_ist" ] && checksum=1 # checksum match
+
+if [ $checksum == 0 ]; then
+	printf "no checksum match error\n"
+	printf "exiting\n"
+	exit
+	elif [ $checksum == 1 ]; then
+		printf "checksum match\n"
+fi
+
+# write to usb
+echo
+printf "writing image to $target_device\n"
+sudo dd if=$download_location/$file1 of=$target_device bs=4M status=progress oflag=sync
+
+printf "ready\n"
