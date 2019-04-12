@@ -79,12 +79,12 @@ file1=$(curl -s $source1/sha1sums.txt | grep -o 'archlinux-.*-x86_64.iso')
 # download
 
 echo
-printf "archiso image version:	$file1\n"
-printf "downloading from:	$source1\n"
-printf "writing to:		$download_location\n"
+printf "%27s %s\n" "image version:" "$file1"
+printf "%27s %s\n" "downloading from:" "$source1"
+printf "%27s %s\n" "writing iso to:" "$download_location"
 cd $download_location
 echo
-printf "downloading\n"
+printf "downloading...\n"
 curl -O "$source1/$file1"
 
 
@@ -101,7 +101,7 @@ sha1_soll=$(curl -s $source1/sha1sums.txt | grep $file1 | cut -d ' ' -f 1)
 echo
 printf "checksum comparison\n"
 printf "soll sha1: $sha1_soll\n"
-printf "ist  sha1:  $sha1_ist\n"
+printf "ist  sha1: $sha1_ist\n"
 
 ## checksum comparison and set status
 [ "$sha1_soll" == "$sha1_ist" ] || checksum=0 # no checksum match
