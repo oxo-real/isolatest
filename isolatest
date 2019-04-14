@@ -48,7 +48,7 @@ fi
 
 
 # info and warning
-printf "isolatest  (c) 2019  cytopyge\n"
+printf "isolatest (c) 2019 cytopyge\n"
 echo
 ## device info for human
 lsblk --tree -o name,uuid,fstype,label,size,fsuse%,fsused,path,mountpoint
