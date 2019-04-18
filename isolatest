@@ -51,7 +51,7 @@ if [[ -d $target_device ]] ; then
 fi
 
 ## internet connection
-if [ ! -z $(ping -q -w 2 -c 1 9.9.9.9 | grep -i unreachable) ]; then
+if [ -z $(ping -q -w 2 -c 1 9.9.9.9 | grep -i unreachable) ]; then
 	printf "internet connection detected via $(ip r | grep default | cut -d ' ' -f 3)\n"
 else
 	printf "no internet connection\n"
