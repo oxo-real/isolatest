@@ -30,7 +30,7 @@ download_location="$HOME/download_"
 target_device=$1
 clear
 
-# check for parameter validity
+# check for requirements
 
 ## not a mountpoint
 mountpoint -q $target_device
@@ -46,6 +46,19 @@ if [[ -d $target_device ]] ; then
 	printf "exiting\n"
 	exit
 fi
+
+## internet connection
+if [ ! -z $(ping -q -w 2 -c 1 9.9.9.9 | grep -i unreachable) ]; then
+	printf "internet connection detected via $(ip r | grep default | cut -d ' ' -f 3)\n"
+else
+	printf "no internet connection\n"
+	printf "exiting\n"
+	exit
+fi
+
+echo
+printf "requirements check complete\n"
+clear
 
 
 # info and warning
