@@ -21,6 +21,7 @@
 
 
 # usage: isolatest [path_to_target_device]
+# path to device is mandatory
 
 
 # initialization
