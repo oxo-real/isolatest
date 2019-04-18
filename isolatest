@@ -29,6 +29,9 @@
 download_location="$HOME/download_"
 target_device=$1
 clear
+printf "isolatest (c) 2019 cytopyge\n"
+echo
+
 
 # check for requirements
 
