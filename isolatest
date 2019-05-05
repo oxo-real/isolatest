@@ -107,7 +107,7 @@ file1=$(curl -s $source1/sha1sums.txt | grep -o 'archlinux-.*-x86_64.iso')
 echo
 printf "%27s %s\n" "image version:" "$file1"
 printf "%27s %s\n" "downloading from:" "$source1"
-printf "%27s %s\n" "writing iso image to:" "$download_location"
+printf "%27s %s\n" "copying iso image to:" "$download_location"
 printf "%27s %s\n" "extracting iso image to:" "$target_device"
 cd $download_location
 echo
@@ -137,16 +137,16 @@ printf "ist  sha1: $sha1_ist\n"
 
 if [ $checksum == 0 ]; then
 	printf "checksum error!\n"
-	read -p "delete iso image? (Y/n) " -n 1 -r
+	read -p "delete unvalidated iso image? (y/N) " -n 1 -r
 
-	if [[ $REPLY =~ ^[Nn]$ ]] ; then
-		printf "leaving unvalidated iso image in $download_location"
-	else
+	if [[ $REPLY =~ ^[Yy]$ ]] ; then
 		echo
 		srm -Ev $download_location/$file1
 		printf "unvalidated iso image wiped\n"
 		printf "exiting\n"
 		exit
+	else
+		printf "leaving unvalidated iso image in $download_location"
 	fi
 
 	printf "aborting\n"
@@ -162,7 +162,7 @@ sudo dd if=$download_location/$file1 of=$target_device bs=4M status=progress ofl
 
 echo
 printf "process complete!\n"
-printf "iso image stays available in $download_location\n"
+printf "$file1 available in $download_location\n"
 echo
 
 tmp_loc="~/temp_"
