@@ -161,16 +161,15 @@ printf "extracting $file1 to $target_device\n"
 sudo dd if=$download_location/$file1 of=$target_device bs=4M status=progress oflag=sync
 
 echo
-printf "process complete\n"
+printf "process complete!\n"
 printf "iso image stays available in $download_location\n"
+echo
 
 tmp_loc="~/temp_"
 mkdir -p $tmp_loc
 sudo mount -r --options silent $target_device $tmp_loc
 
-printf "some package list statistics:\n"
-printf "$file1 release\n"
-printf "release $(lsblk -no label $target_device | head -n 1)\n"
+printf "release $(lsblk -no label $target_device | head -n 1):\n"
 printf "$(cat $tmp_loc/arch/pkglist.x86_64.txt | grep firmware)\n"
 printf "$(cat $tmp_loc/arch/pkglist.x86_64.txt | grep keyring)\n"
 printf "$(cat $tmp_loc/arch/pkglist.x86_64.txt | grep "systemd 2")\n"
