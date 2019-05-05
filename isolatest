@@ -28,10 +28,18 @@
 
 download_location="$HOME/download_"
 target_device=$1
-clear
-printf "isolatest (c) 2019 cytopyge\n"
-echo
 
+function header() {
+
+	clear
+	printf "isolatest (c) 2019 cytopyge\n"
+
+}
+
+sudo -k
+header
+echo
+sudo echo ""
 
 # check for requirements
 
@@ -65,7 +73,7 @@ clear
 
 
 # info and warning
-printf "isolatest (c) 2019 cytopyge\n"
+header
 echo
 ## device info for human
 lsblk --tree -o name,uuid,fstype,label,size,fsuse%,fsused,path,mountpoint
@@ -85,6 +93,7 @@ fi
 
 # configuring the mirrorlist
 
+header
 sudo cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.old
 echo
 printf "selecting fastest mirror\n"
@@ -98,10 +107,11 @@ file1=$(curl -s $source1/sha1sums.txt | grep -o 'archlinux-.*-x86_64.iso')
 echo
 printf "%27s %s\n" "image version:" "$file1"
 printf "%27s %s\n" "downloading from:" "$source1"
-printf "%27s %s\n" "writing iso to:" "$download_location"
+printf "%27s %s\n" "writing iso image to:" "$download_location"
+printf "%27s %s\n" "extracting iso image to:" "$target_device"
 cd $download_location
 echo
-printf "downloading...\n"
+printf "downloading ...\n"
 curl -O "$source1/$file1"
 
 
@@ -116,7 +126,8 @@ sha1_soll=$(curl -s $source1/sha1sums.txt | grep $file1 | cut -d ' ' -f 1)
 
 ## report to human
 echo
-printf "checksum comparison\n"
+printf "iso image checksum comparison:\n"
+printf "source soll: $source1\n"
 printf "soll sha1: $sha1_soll\n"
 printf "ist  sha1: $sha1_ist\n"
 
@@ -125,18 +136,46 @@ printf "ist  sha1: $sha1_ist\n"
 [ "$sha1_soll" == "$sha1_ist" ] && checksum=1 # checksum match
 
 if [ $checksum == 0 ]; then
-	printf "checksum error\n"
-	printf "exiting\n"
+	printf "checksum error!\n"
+	read -p "delete iso image? (Y/n) " -n 1 -r
+
+	if [[ $REPLY =~ ^[Nn]$ ]] ; then
+		printf "leaving unvalidated iso image in $download_location"
+	else
+		echo
+		srm -Ev $download_location/$file1
+		printf "unvalidated iso image wiped\n"
+		printf "exiting\n"
+		exit
+	fi
+
+	printf "aborting\n"
 	exit
 	elif [ $checksum == 1 ] ; then
-		printf "identical checksums\n"
+		printf "checksum soll is equal to checksum ist\n"
 fi
 
 # write to usb
 echo
-printf "writing image to $target_device\n"
+printf "extracting $file1 to $target_device\n"
 sudo dd if=$download_location/$file1 of=$target_device bs=4M status=progress oflag=sync
 
 echo
 printf "process complete\n"
+printf "iso image stays available in $download_location\n"
+
+tmp_loc="~/temp_"
+mkdir -p $tmp_loc
+sudo mount -r --options silent $target_device $tmp_loc
+
+printf "some package list statistics:\n"
+printf "$file1 release\n"
+printf "release $(lsblk -no label $target_device | head -n 1)\n"
+printf "$(cat $tmp_loc/arch/pkglist.x86_64.txt | grep firmware)\n"
+printf "$(cat $tmp_loc/arch/pkglist.x86_64.txt | grep keyring)\n"
+printf "$(cat $tmp_loc/arch/pkglist.x86_64.txt | grep "systemd 2")\n"
+printf "$(cat $tmp_loc/arch/pkglist.x86_64.txt | grep bash)\n"
+printf "$(cat $tmp_loc/arch/pkglist.x86_64.txt | grep "vim 8")\n"
+
+sudo umount $tmp_loc
 echo
