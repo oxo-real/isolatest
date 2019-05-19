@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 #
 ##
 ###  _           _       _            _
@@ -37,14 +37,14 @@ echo
 
 ## not a mountpoint
 mountpoint -q $target_device
-if [[ $? -eq 0 ]] ; then
+if [ $? -eq 0 ] ; then
 	printf "$target_device is a mountpoint\n"
 	printf "exiting\n"
 	exit
 fi
 
 ## no valid directory path
-if [[ -d $target_device ]] ; then
+if [ -d $target_device ] ; then
 	printf "$target_device is a valid path\n"
 	printf "exiting\n"
 	exit
@@ -72,9 +72,23 @@ lsblk --tree -o name,uuid,fstype,label,size,fsuse%,fsused,path,mountpoint
 echo
 printf "WARNING! about to \033[1mirreversible overwrite\033[0m $target_device\n"
 echo
-read -p "continue? (y/N) " -n 1 -r
+printf "continue? (y/N) "
 
-if [[ $REPLY =~ ^[yY]$ ]] ; then
+reply() {
+
+	# first silently entered character goes directly to $reply
+	stty_0=$(stty -g)
+	stty raw -echo
+	reply=$(head -c 1)
+	stty $stty_0
+
+}
+
+
+reply
+
+
+if printf "$reply" | grep -iq "^y" ; then
 	clear
 else
 	echo
