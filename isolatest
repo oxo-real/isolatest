@@ -29,7 +29,7 @@
 download_location="$HOME/download_"
 target_device=$1
 
-function header() {
+header() {
 
 	clear
 	printf "isolatest (c) 2019 cytopyge\n"
@@ -146,24 +146,26 @@ printf "soll sha1: $sha1_soll\n"
 printf "ist  sha1: $sha1_ist\n"
 
 ## checksum comparison and set status
-[ "$sha1_soll" == "$sha1_ist" ] || checksum=0 # no checksum match
-[ "$sha1_soll" == "$sha1_ist" ] && checksum=1 # checksum match
+[ "$sha1_soll" = "$sha1_ist" ] || checksum=0 # no checksum match
+[ "$sha1_soll" = "$sha1_ist" ] && checksum=1 # checksum match
 
-if [ $checksum == 0 ]; then
+if [ $checksum = 0 ]; then
 	printf "checksum error!\n"
-	read -p "delete unvalidated iso image? (y/N) " -n 1 -r
+	printf "delete unvalidated iso image? (y/N) "
 
-	if [[ $REPLY =~ ^[Yy]$ ]] ; then
+	reply
+
+	if printf "$reply" | grep -iq "^y" ; then
 		echo
 		srm -Ev $download_location/$file1
 		printf "unvalidated iso image wiped\n"
 		printf "exiting\n"
 		exit
 	else
-		printf "leaving unvalidated iso image in $download_location"
+		printf "unvalidated iso image in: $download_location"
 	fi
 
-	printf "aborting\n"
+	printf "exiting\n"
 	exit
 	elif [ $checksum == 1 ] ; then
 		printf "checksum soll is equal to checksum ist\n"
