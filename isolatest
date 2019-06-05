@@ -84,6 +84,7 @@ file1=$(curl -s $source1/sha1sums.txt | grep -o 'archlinux-.*-x86_64.iso')
 #[TODO] on error select second mirror
 
 
+
 # download
 
 echo
