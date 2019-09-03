@@ -178,6 +178,7 @@ fi
 # write to usb
 echo
 printf "extracting $file1 to $target_device\n"
+echo
 sudo dd if=$download_location/$file1 of=$target_device bs=4M status=progress oflag=sync
 
 echo
