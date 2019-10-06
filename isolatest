@@ -26,7 +26,7 @@
 
 # initialization
 
-download_location="$HOME/download_"
+download_location="$HOME/_download"
 target_device=$1
 
 header() {
