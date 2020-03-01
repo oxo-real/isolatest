@@ -32,7 +32,8 @@ target_device=$1
 header() {
 
 	clear
-	printf "isolatest (c) 2019 cytopyge\n"
+	printf "isolatest (c) 2019 - 2020 cytopyge\n"
+	echo
 
 }
 
