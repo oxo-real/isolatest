@@ -79,7 +79,7 @@ header
 sudo cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.old
 echo
 printf "selecting fastest mirror\n"
-sudo reflector --verbose --country 'Netherlands' -l 5 --sort rate --save /etc/pacman.d/mirrorlist
+sudo reflector --verbose --country 'Sweden' -l 5 --sort rate --save /etc/pacman.d/mirrorlist
 
 source1=$(grep = /etc/pacman.d/mirrorlist | sed -n 1p | awk -F '= ' '{print $2}' | sed 's/$.*/iso\/latest/')
 file1=$(curl -s $source1/sha1sums.txt | grep -o 'archlinux-.*-x86_64.iso')
