@@ -14,7 +14,7 @@
 ### isolatest
 ### arch linux iso
 ### create bootable device with the latest archiso
-### (c) 2019 cytopyge
+### (c) 2019 - 2021 cytopyge
 ###
 ##
 #
@@ -26,13 +26,17 @@
 
 # initialization
 
-download_location="$HOME/_download"
+mc_abbr="SE"
+mirror_country="Sweden"
+mirror_amount="5"
+arch_mirrorlist="https://www.archlinux.org/mirrorlist/?country=$mc_abbr&protocol=http&protocol=https&ip_version=4"
+download_location="$XDG_DATA_HOME/download"
 target_device=$1
 
 header() {
 
 	clear
-	printf "isolatest (c) 2019 - 2020 cytopyge\n"
+	printf "isolatest  (c) 2019 - 2021 cytopyge\n"
 	echo
 
 }
@@ -76,10 +80,11 @@ clear
 # configuring the mirrorlist
 
 header
-sudo cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.old
+file_etc_pacmand_mirrorlist="/etc/pacman.d/mirrorlist"
+sudo cp $file_etc_pacmand_mirrorlist /etc/pacman.d/`date "+%Y%m%d%H%M%S"`_mirrorlist_backup
 echo
 printf "selecting fastest mirror\n"
-sudo reflector --verbose --country 'Sweden' -l 5 --sort rate --save /etc/pacman.d/mirrorlist
+sudo reflector --verbose --country $mirror_country -l $mirror_amount --sort rate --save $file_etc_pacmand_mirrorlist
 
 source1=$(grep = /etc/pacman.d/mirrorlist | sed -n 1p | awk -F '= ' '{print $2}' | sed 's/$.*/iso\/latest/')
 file1=$(curl -s $source1/sha1sums.txt | grep -o 'archlinux-.*-x86_64.iso')
