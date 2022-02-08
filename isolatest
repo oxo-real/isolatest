@@ -6,7 +6,6 @@
 ### | / __|/ _ \| |/ _` | __/ _ \/ __| __|
 ### | \__ \ (_) | | (_| | ||  __/\__ \ |_
 ### |_|___/\___/|_|\__,_|\__\___||___/\__|
-###
 ###  _ _|_ _ ._    _  _
 ### (_\/|_(_)|_)\/(_|(/_
 ###   /      |  /  _|
@@ -14,7 +13,7 @@
 ### isolatest
 ### arch linux iso
 ### create bootable device with the latest archiso
-### (c) 2019 - 2021 cytopyge
+### 2019 - 2021  |  cytopyge
 ###
 ##
 #
@@ -30,15 +29,15 @@ mc_abbr="SE"
 mirror_country="Sweden"
 mirror_amount="5"
 arch_mirrorlist="https://www.archlinux.org/mirrorlist/?country=$mc_abbr&protocol=http&protocol=https&ip_version=4"
-download_location="$XDG_DATA_HOME/download"
+download_location="$XDG_DATA_HOME/c/download"
 target_device=$1
 
-header() {
-
+header()
+{
 	clear
-	printf "isolatest  (c) 2019 - 2021 cytopyge\n"
+	printf "isolatest\n"
+	printf "2019 - 2021  |  cytopyge\n"
 	echo
-
 }
 
 sudo -k
@@ -125,6 +124,7 @@ printf "ist  sha1: $sha1_ist\n"
 [ "$sha1_soll" = "$sha1_ist" ] && checksum=1 # checksum match
 
 if [ $checksum = 0 ]; then
+
 	printf "checksum error!\n"
 	printf "delete unvalidated iso image? (y/N) "
 
@@ -142,8 +142,11 @@ if [ $checksum = 0 ]; then
 
 	printf "exiting\n"
 	exit
+
 elif [ $checksum == 1 ] ; then
+
 	printf "checksum soll is equal to checksum ist\n"
+
 fi
 
 
