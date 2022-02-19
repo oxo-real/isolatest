@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 #
 ##
 ###  _           _       _            _
@@ -11,200 +11,274 @@
 ###   /      |  /  _|
 ###
 ### isolatest
-### arch linux iso
 ### create bootable device with the latest archiso
-### 2019 - 2021  |  cytopyge
+### copyright (c) 2019 - 2022  |  cytopyge
+###
+### GNU GPLv3 GENERAL PUBLIC LICENSE
+### This program is free software: you can redistribute it and/or modify
+### it under the terms of the GNU General Public License as published by
+### the Free Software Foundation, either version 3 of the License, or
+### (at your option) any later version.
+###
+### This program is distributed in the hope that it will be useful,
+### but WITHOUT ANY WARRANTY; without even the implied warranty of
+### MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+### GNU General Public License for more details.
+###
+### You should have received a copy of the GNU General Public License
+### along with this program.  If not, see <https://www.gnu.org/licenses/>.
+### https://www.gnu.org/licenses/gpl-3.0.txt
+###
+### y3l0b3b5z2u=:matrix.org @cytopyge@mastodon.social
 ###
 ##
 #
 
+## dependencies
+#	dd, curl, openssl, reflector
 
-# usage: isolatest [path_to_target_device]
-# path to device is mandatory
+## usage
+#	isolatest <target>
+
+## example
+#	none
 
 
+# initial definitions
+
+## script
+script_name='isolatest'
+developer='cytopyge'
+license='gplv3'
+initial_release='2019'
+
+## hardcoded variables
 # initialization
 
-mc_abbr="SE"
-mirror_country="Sweden"
-mirror_amount="5"
-arch_mirrorlist="https://www.archlinux.org/mirrorlist/?country=$mc_abbr&protocol=http&protocol=https&ip_version=4"
 download_location="$XDG_DATA_HOME/c/download"
 target_device=$1
+mc_abbr="SE"
+mirror_amount="5"
+mirror_country="Sweden"
+arch_mirrorlist="https://www.archlinux.org/mirrorlist/?country=$mc_abbr&protocol=http&protocol=https&ip_version=4"
+
+#--------------------------------
+
 
 header()
 {
 	clear
-	printf "isolatest\n"
-	printf "2019 - 2021  |  cytopyge\n"
+	printf "$script_name\n"
+	printf "copyright (c) $initial_release - $(date +%Y)  |  $developer\n"
 	echo
 }
 
-sudo -k
-header
-echo
-sudo echo ""
 
-# check for requirements
-
-## not a mountpoint
-mountpoint -q $target_device
-if [ $? -eq 0 ] ; then
-	printf "$target_device is a mountpoint\n"
-	printf "exiting\n"
-	exit
-fi
-
-## no valid directory path
-if [ -d $target_device ] ; then
-	printf "$target_device is a valid path\n"
-	printf "exiting\n"
-	exit
-fi
-
-## internet connection
-if [ -z $(ping -q -w 2 -c 1 9.9.9.9 | grep -i unreachable) ]; then
-	printf "internet connection detected via $(ip r | grep default | cut -d ' ' -f 3)\n"
-else
-	printf "no internet connection\n"
-	printf "exiting\n"
-	exit
-fi
-
-echo
-printf "requirements check complete\n"
-clear
+validate_priviledges()
+{
+	sudo -v
+}
 
 
-# configuring the mirrorlist
+check_target_dev()
+{
+	## not a mountpoint
+	mountpoint -q $target_device
 
-header
-file_etc_pacmand_mirrorlist="/etc/pacman.d/mirrorlist"
-sudo cp $file_etc_pacmand_mirrorlist /etc/pacman.d/`date "+%Y%m%d%H%M%S"`_mirrorlist_backup
-echo
-printf "selecting fastest mirror\n"
-sudo reflector --verbose --country $mirror_country -l $mirror_amount --sort rate --save $file_etc_pacmand_mirrorlist
+	if [ $? -eq 0 ] ; then
 
-source1=$(grep = /etc/pacman.d/mirrorlist | sed -n 1p | awk -F '= ' '{print $2}' | sed 's/$.*/iso\/latest/')
-file1=$(curl -s $source1/sha1sums.txt | grep -o 'archlinux-.*-x86_64.iso')
-#[TODO] on error select next mirror of mirrorlist
-
-
-# download
-
-echo
-printf "%27s %s\n" "image version:" "$file1"
-printf "%27s %s\n" "downloading from:" "$source1"
-printf "%27s %s\n" "copying iso image to:" "$download_location"
-printf "%27s %s\n" "extracting iso image to:" "$target_device"
-cd $download_location
-echo
-printf "downloading ...\n"
-curl -O "$source1/$file1"
-
-
-# sha1 checksum verification
-
-## derive sha1 ist
-sha1_ist=$(openssl dgst -sha1 $file1 | sed 's/^.*= //')
-printf "$sha1_ist" > $file1.sha1_ist
-
-## derive sha1 soll
-sha1_soll=$(curl -s $source1/sha1sums.txt | grep $file1 | cut -d ' ' -f 1)
-
-## report to human
-echo
-printf "iso image checksum comparison:\n"
-printf "source soll: $source1\n"
-printf "soll sha1: $sha1_soll\n"
-printf "ist  sha1: $sha1_ist\n"
-
-## checksum comparison and set status
-[ "$sha1_soll" = "$sha1_ist" ] || checksum=0 # no checksum match
-[ "$sha1_soll" = "$sha1_ist" ] && checksum=1 # checksum match
-
-if [ $checksum = 0 ]; then
-
-	printf "checksum error!\n"
-	printf "delete unvalidated iso image? (y/N) "
-
-	reply
-
-	if printf "$reply" | grep -iq "^y" ; then
-		echo
-		srm -Ev $download_location/$file1
-		printf "unvalidated iso image wiped\n"
+		printf "$target_device is a mountpoint\n"
 		printf "exiting\n"
 		exit
-	else
-		printf "unvalidated iso image in: $download_location"
+
 	fi
 
-	printf "exiting\n"
-	exit
+	## no valid directory path
+	if [ -d $target_device ] ; then
 
-elif [ $checksum == 1 ] ; then
+		printf "$target_device is a valid path\n"
+		printf "exiting\n"
+		exit
 
-	printf "checksum soll is equal to checksum ist\n"
+	fi
+}
 
-fi
+
+internet_connection()
+{
+	if [ -z $(ping -q -w 2 -c 1 9.9.9.9 | grep -i unreachable) ]; then
+
+		printf "internet connection detected via $(ip r | grep default | cut -d ' ' -f 3)\n"
+
+	else
+
+		printf "no internet connection\n"
+		printf "exiting\n"
+		exit
+
+	fi
+
+	echo
+	printf "requirements check complete\n"
+	clear
+}
 
 
-# info and warning
-header
-echo
-## device info for human
-lsblk --tree -o name,uuid,fstype,label,size,fsuse%,fsused,path,mountpoint
-echo
-printf "WARNING! about to \033[1mirreversible overwrite\033[0m $target_device\n"
-echo
-printf "continue? (y/N) "
+configuring_mirrorlist()
+{
+	header
+	file_etc_pacmand_mirrorlist="/etc/pacman.d/mirrorlist"
+	sudo cp $file_etc_pacmand_mirrorlist /etc/pacman.d/`date "+%Y%m%d%H%M%S"`_mirrorlist_backup
+	echo
+	printf "selecting fastest mirror\n"
+	sudo reflector --verbose --country $mirror_country -l $mirror_amount --sort rate --save $file_etc_pacmand_mirrorlist
 
-reply() {
+	source1=$(grep = /etc/pacman.d/mirrorlist | sed -n 1p | awk -F '= ' '{print $2}' | sed 's/$.*/iso\/latest/')
+	file1=$(curl -s $source1/sha1sums.txt | grep -o 'archlinux-.*-x86_64.iso')
+	#[TODO] on error select next mirror of mirrorlist
+}
 
+
+download()
+{
+	echo
+	printf "%27s %s\n" "image version:" "$file1"
+	printf "%27s %s\n" "downloading from:" "$source1"
+	printf "%27s %s\n" "copying iso image to:" "$download_location"
+	printf "%27s %s\n" "extracting iso image to:" "$target_device"
+	cd $download_location
+	echo
+	printf "downloading ...\n"
+	curl -O "$source1/$file1"
+}
+
+
+sha1_checksum_verification()
+{
+	## derive sha1 ist
+	sha1_ist=$(openssl dgst -sha1 $file1 | sed 's/^.*= //')
+	printf "$sha1_ist" > $file1.sha1_ist
+
+	## derive sha1 soll
+	sha1_soll=$(curl -s $source1/sha1sums.txt | grep $file1 | cut -d ' ' -f 1)
+
+	## report to human
+	echo
+	printf "iso image checksum comparison:\n"
+	printf "source soll: $source1\n"
+	printf "soll sha1: $sha1_soll\n"
+	printf "ist  sha1: $sha1_ist\n"
+
+	## checksum comparison and set status
+	[ "$sha1_soll" = "$sha1_ist" ] || checksum=0 # no checksum match
+	[ "$sha1_soll" = "$sha1_ist" ] && checksum=1 # checksum match
+
+	if [ $checksum = 0 ]; then
+
+		printf "checksum error!\n"
+		printf "delete unvalidated iso image? (y/N) "
+
+		reply
+
+		if printf "$reply" | grep -iq "^y" ; then
+			echo
+			srm -Ev $download_location/$file1
+			printf "unvalidated iso image wiped\n"
+			printf "exiting\n"
+			exit
+		else
+			printf "unvalidated iso image in: $download_location"
+		fi
+
+		printf "exiting\n"
+		exit
+
+	elif [ $checksum == 1 ] ; then
+
+		printf "checksum soll is equal to checksum ist\n"
+
+	fi
+}
+
+
+reply()
+{
 	# first silently entered character goes directly to $reply
 	stty_0=$(stty -g)
 	stty raw -echo
 	reply=$(head -c 1)
 	stty $stty_0
-
 }
 
 
-reply
-
-
-if printf "$reply" | grep -iq "^y" ; then
-	clear
-else
+info_and_warning()
+{
+	header
 	echo
-	printf "aborted by user\n"
-	printf "exiting\n"
-	exit
-fi
+	## device info for human
+	lsblk --tree -o name,uuid,fstype,label,size,fsuse%,fsused,path,mountpoint
+	echo
+	printf "WARNING! about to \033[1mirreversible overwrite\033[0m $target_device\n"
+	echo
+	printf "continue? (y/N) "
+
+	reply
+
+	if printf "$reply" | grep -iq "^y" ; then
+		clear
+	else
+		echo
+		printf "aborted by user\n"
+		printf "exiting\n"
+		exit
+	fi
+}
 
 
-# write to usb
-echo
-printf "extracting $file1 to $target_device\n"
-echo
-sudo dd if=$download_location/$file1 of=$target_device bs=4M status=progress oflag=sync
+write_to_usb()
+{
+	echo
+	printf "extracting $file1 to $target_device\n"
+	echo
+	sudo dd if=$download_location/$file1 of=$target_device bs=4M status=progress oflag=sync
 
-echo
-printf "process complete!\n"
-printf "$file1 available in $download_location\n"
-echo
+	echo
+	printf "process complete!\n"
+	printf "$file1 available in $download_location\n"
+	echo
+}
 
-tmp_loc="~/temp_"
-mkdir -p $tmp_loc
-sudo mount -r --options silent $target_device $tmp_loc
 
-printf "release $(lsblk -no label $target_device | head -n 1):\n"
-printf "$(cat $tmp_loc/arch/pkglist.x86_64.txt | grep firmware)\n"
-printf "$(cat $tmp_loc/arch/pkglist.x86_64.txt | grep keyring)\n"
-printf "$(cat $tmp_loc/arch/pkglist.x86_64.txt | grep "systemd 2")\n"
-printf "$(cat $tmp_loc/arch/pkglist.x86_64.txt | grep bash)\n"
-printf "$(cat $tmp_loc/arch/pkglist.x86_64.txt | grep "vim 8")\n"
+some_info()
+{
+	tmp_loc="~/temp_"
+	mkdir -p $tmp_loc
+	sudo mount -r --options silent $target_device $tmp_loc
 
-sudo umount $tmp_loc
-echo
+	printf "release $(lsblk -no label $target_device | head -n 1):\n"
+	printf "$(cat $tmp_loc/arch/pkglist.x86_64.txt | grep firmware)\n"
+	printf "$(cat $tmp_loc/arch/pkglist.x86_64.txt | grep keyring)\n"
+	printf "$(cat $tmp_loc/arch/pkglist.x86_64.txt | grep "systemd 2")\n"
+	printf "$(cat $tmp_loc/arch/pkglist.x86_64.txt | grep bash)\n"
+	printf "$(cat $tmp_loc/arch/pkglist.x86_64.txt | grep "vim 8")\n"
+
+	sudo umount $tmp_loc
+	echo
+}
+
+
+main()
+{
+header
+validate_priviledges
+check_target_dev
+internet_connection
+configuring_mirrorlist
+download
+sha1_checksum_verification
+info_and_warning
+write_to_usb
+some_info
+}
+
+main
