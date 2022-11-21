@@ -81,6 +81,15 @@ validate_priviledges()
 }
 
 
+sourcing()
+{
+    # external code sources
+    source_dir="$XDG_DATA_HOME/c/git/code/source/function"
+    source $source_dir/reply_functions
+    source $source_dir/text_appearance
+}
+
+
 check_target_dev()
 {
 	## not a mountpoint
@@ -134,9 +143,35 @@ configuring_mirrorlist()
 	printf "selecting fastest mirror\n"
 	sudo reflector --verbose --country $mirror_country -l $mirror_amount --sort rate --save $file_etc_pacmand_mirrorlist
 
+	# create mirror source address
 	source1=$(grep = /etc/pacman.d/mirrorlist | sed -n 1p | awk -F '= ' '{print $2}' | sed 's/$.*/iso\/latest/')
-	file1=$(curl -s $source1/sha1sums.txt | grep -o 'archlinux-.*-x86_64.iso')
+
+	# create iso filename
+	file1=$(curl -s $source1/sha256sums.txt | grep -o 'archlinux-.*-x86_64.iso')
 	#[TODO] on error select next mirror of mirrorlist
+
+	# check if file already exists
+	if [[ -f $download_location/$file1 ]]; then
+
+	    echo
+	    printf "$download_location/$file1 already exists\n"
+	    printf "overwrite? (y/N) "
+
+	    reply_single
+
+	    if printf "$reply" | grep -iq "^y"; then
+
+		download_status=1
+
+	    else
+
+		download_status=0
+
+	    fi
+
+
+	fi
+
 }
 
 
@@ -147,32 +182,48 @@ download()
 	printf "%27s %s\n" "downloading from:" "$source1"
 	printf "%27s %s\n" "copying iso image to:" "$download_location"
 	printf "%27s %s\n" "extracting iso image to:" "$target_device"
-	cd $download_location
-	echo
-	printf "downloading ...\n"
-	curl -O "$source1/$file1"
+
+	if [[ download_status == 1 ]]; then
+
+	    #cd $download_location
+	    echo
+	    printf "downloading ...\n"
+	    curl -O "$source1/$file1" -o "$download_location/$file1"
+	    #curl -O "$source1/$file1"
+
+	fi
 }
 
 
-sha1_checksum_verification()
-{
-	## derive sha1 ist
-	sha1_ist=$(openssl dgst -sha1 $file1 | sed 's/^.*= //')
-	printf "$sha1_ist" > $file1.sha1_ist
+sha256_checksum_verification() {
+	## derive sha256 ist
+	sha256_ist=$(openssl dgst -sha256 $download_location/$file1 | sed 's/^.*= //')
+	#sha1_ist=$(openssl dgst -sha1 $file1 | sed 's/^.*= //')
+	printf "$sha256_ist" > $download_location/$file1.sha256_ist
 
-	## derive sha1 soll
-	sha1_soll=$(curl -s $source1/sha1sums.txt | grep $file1 | cut -d ' ' -f 1)
+	## derive sha256 soll
+	if [[ $download_status == 1 ]]; then
+
+	    sha256_soll=$(curl -s $source1/sha256sums.txt | grep $file1 | cut -d ' ' -f 1)
+	    #sha1_soll=$(curl -s $source1/sha1sums.txt | grep $file1 | cut -d ' ' -f 1)
+	    printf "$sha256_soll" > $download_location/$file1.sha256_soll
+
+	else
+
+	    sha256_soll=$(cat $download_location/$file1.sha256_soll)
+
+	fi
 
 	## report to human
 	echo
 	printf "iso image checksum comparison:\n"
-	printf "source soll: $source1\n"
-	printf "soll sha1: $sha1_soll\n"
-	printf "ist  sha1: $sha1_ist\n"
+	printf "source soll: $source1/sha256sums.txt\n"
+	printf "soll sha256: $sha256_soll\n"
+	printf "ist  sha256: $sha256_ist\n"
 
 	## checksum comparison and set status
-	[ "$sha1_soll" = "$sha1_ist" ] || checksum=0 # no checksum match
-	[ "$sha1_soll" = "$sha1_ist" ] && checksum=1 # checksum match
+	[ "$sha256_soll" = "$sha256_ist" ] || checksum=0 # no checksum match
+	[ "$sha256_soll" = "$sha256_ist" ] && checksum=1 # checksum match
 
 	if [ $checksum = 0 ]; then
 
@@ -180,21 +231,24 @@ sha1_checksum_verification()
 		printf "delete unvalidated iso image? (y/N) "
 
 		reply
+		echo
 
 		if printf "$reply" | grep -iq "^y" ; then
 			echo
-			srm -Ev $download_location/$file1
-			printf "unvalidated iso image wiped\n"
+			rm $download_location/$file1
+			#srm -Ev $download_location/$file1
+			printf "unvalidated iso image moved to trash\n"
+			#printf "unvalidated iso image wiped\n"
 			printf "exiting\n"
 			exit
 		else
-			printf "unvalidated iso image in: $download_location"
+			printf "unvalidated iso image in: $download_location\n"
 		fi
 
 		printf "exiting\n"
 		exit
 
-	elif [ $checksum == 1 ] ; then
+	elif [ $checksum == 1 ]; then
 
 		printf "checksum soll is equal to checksum ist\n"
 
@@ -223,7 +277,8 @@ info_and_warning()
 	echo
 	printf "continue? (y/N) "
 
-	reply
+	reply_single
+	echo
 
 	if printf "$reply" | grep -iq "^y" ; then
 		clear
@@ -259,9 +314,9 @@ some_info()
 	printf "release $(lsblk -no label $target_device | head -n 1):\n"
 	printf "$(cat $tmp_loc/arch/pkglist.x86_64.txt | grep firmware)\n"
 	printf "$(cat $tmp_loc/arch/pkglist.x86_64.txt | grep keyring)\n"
-	printf "$(cat $tmp_loc/arch/pkglist.x86_64.txt | grep "systemd 2")\n"
+	printf "$(cat $tmp_loc/arch/pkglist.x86_64.txt | grep "systemd")\n"
 	printf "$(cat $tmp_loc/arch/pkglist.x86_64.txt | grep bash)\n"
-	printf "$(cat $tmp_loc/arch/pkglist.x86_64.txt | grep "vim 8")\n"
+	printf "$(cat $tmp_loc/arch/pkglist.x86_64.txt | grep "vim")\n"
 
 	sudo umount $tmp_loc
 	echo
@@ -271,12 +326,13 @@ some_info()
 main()
 {
 header
+sourcing
 validate_priviledges
 check_target_dev
 internet_connection
 configuring_mirrorlist
 download
-sha1_checksum_verification
+sha256_checksum_verification
 info_and_warning
 write_to_usb
 some_info
