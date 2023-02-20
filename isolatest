@@ -60,7 +60,7 @@ initial_release='2019'
 # initialization
 
 download_location="$XDG_DATA_HOME/c/download"
-target_device=$1
+target_device="$1"
 mc_abbr="SE"
 mirror_amount="5"
 mirror_country="Sweden,Netherlands"
@@ -72,7 +72,7 @@ header()
 {
     #clear
     printf "$script_name\n"
-    printf "copyright (c) $initial_release - $(date +%Y)  |  $developer\n"
+    printf 'copyright (c) %s - %s  |  %s\n' "$initial_release" "$(date +%Y)" "$developer"
     echo
 }
 
@@ -179,11 +179,11 @@ download()
     printf "%27s %s\n" "copying iso image to:" "$download_location"
     printf "%27s %s\n" "extracting iso image to:" "$target_device"
 
-    #cd $download_location
     echo
     printf "downloading ...\n"
+    download_status=1
 
-    curl -O "$source1/$file1" -o "$download_location/$file1"
+    curl -O "$source1/$file1" --output-dir "$download_location"
     #curl -O "$source1/$file1"
 }
 
@@ -197,7 +197,8 @@ sha256_checksum_verification() {
     ## derive sha256 soll
     if [[ $download_status == 1 ]]; then
 
-	sha256_soll=$(curl -s $source1/sha256sums.txt | grep $file1 | cut -d ' ' -f 1)
+	## get iso checksum from sha256sums.txt
+	sha256_soll=$(curl --silent --show-error $source1/sha256sums.txt | grep $file1 | cut -d ' ' -f 1)
 	#sha1_soll=$(curl -s $source1/sha1sums.txt | grep $file1 | cut -d ' ' -f 1)
 	printf "$sha256_soll" > $download_location/$file1.sha256_soll
 
@@ -294,10 +295,14 @@ write_to_usb()
 
     echo
     if [[ $? -eq 0 ]]; then
+
 	printf "dd process complete\n"
 	printf "$file1 available in $download_location\n"
+
     else
+
 	printf "dd process encountered errors\n"
+
     fi
 
     echo
