@@ -61,7 +61,7 @@ initial_release='2019'
 
 download_location="$XDG_DATA_HOME/c/download"
 target_device="$1"
-mc_abbr="SE"
+mc_abbr="NL"
 mirror_amount="5"
 mirror_country="Sweden,Netherlands"
 arch_mirrorlist="https://www.archlinux.org/mirrorlist/?country=$mc_abbr&protocol=http&protocol=https&ip_version=4"
