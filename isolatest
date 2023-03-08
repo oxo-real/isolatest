@@ -66,6 +66,9 @@ mirror_amount="5"
 mirror_country="Sweden,Netherlands"
 arch_mirrorlist="https://www.archlinux.org/mirrorlist/?country=$mc_abbr&protocol=http&protocol=https&ip_version=4"
 
+# packages in arch linux live system (isolatest)
+# https://geo.mirror.pkgbuild.com/iso/latest/arch/pkglist.x86_64.txt
+
 #--------------------------------
 
 header()
