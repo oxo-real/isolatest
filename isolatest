@@ -66,6 +66,7 @@ mirror_amount="5"
 mirror_country="Sweden,Netherlands"
 arch_mirrorlist="https://www.archlinux.org/mirrorlist/?country=$mc_abbr&protocol=http&protocol=https&ip_version=4"
 
+tmp_loc="$XDG_CACHE_HOME/temp/isolatest"
 # packages in arch linux live system (isolatest)
 # https://geo.mirror.pkgbuild.com/iso/latest/arch/pkglist.x86_64.txt
 
@@ -141,7 +142,7 @@ internet_connection()
 
 configuring_mirrorlist()
 {
-    header
+    #header
     file_etc_pacmand_mirrorlist="/etc/pacman.d/mirrorlist"
     sudo cp $file_etc_pacmand_mirrorlist /etc/pacman.d/`date "+%Y%m%d%H%M%S"`_mirrorlist_backup
     echo
@@ -265,7 +266,7 @@ reply()
 
 info_and_warning()
 {
-    header
+    #header
     echo
     ## device info for human
     lsblk --tree -o name,uuid,fstype,label,size,fsuse%,fsused,path,mountpoint
@@ -314,7 +315,6 @@ write_to_usb()
 
 some_info()
 {
-    tmp_loc="~/temp_"
     mkdir -p $tmp_loc
     sudo mount -r --options silent $target_device $tmp_loc
 
@@ -326,6 +326,7 @@ some_info()
     printf "$(cat $tmp_loc/arch/pkglist.x86_64.txt | grep "vim")\n"
 
     sudo umount $tmp_loc
+    rm -rf $tmp_loc
     echo
 }
 
