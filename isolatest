@@ -167,7 +167,9 @@ configuring_mirrorlist()
 
 	if printf "$reply" | grep -iq "^n"; then
 
+	    echo
 	    printf 'aborted\n'
+	    exit 172
 
 	fi
 
