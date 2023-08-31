@@ -133,10 +133,6 @@ internet_connection()
 	exit
 
     fi
-
-    echo
-    printf "requirements check complete\n"
-    #clear
 }
 
 
@@ -157,27 +153,38 @@ configuring_mirrorlist()
     #[TODO] on error select next mirror of mirrorlist
 
     # check if file already exists
+    ## TODO add file is not complete iso (partial download)
     if [[ -f $download_location/$file1 ]]; then
 
-	echo
-	printf "$download_location/$file1 already exists\n"
-	printf "continue and overwrite? (y/N) "
+	## derive sha256 ist (preliminary)
+	sha256_ist_pl=$(openssl dgst -sha256 $download_location/$file1 | sed 's/^.*= //')
 
-	reply_single
+	if [[ "$sha256_ist_pl" == "$sha256_soll" ]]; then
 
-	if printf "$reply" | grep -iq "^n"; then
-
+	    ## previous download attempt completed
 	    echo
-	    printf 'aborted\n'
-	    exit 172
+	    printf "$download_location/$file1 already exists\n"
+	    printf "continue and overwrite? (y/N) "
+
+	    reply_single
+
+	    if printf "$reply" | grep -iq "^n"; then
+
+		echo
+		printf 'aborted\n'
+		exit 172
+
+	    fi
 
 	fi
+
+	## else curl continues downloading
 
     fi
 }
 
 
-download()
+download_iso()
 {
     echo
     printf "%27s %s\n" "image version:" "$file1"
@@ -189,30 +196,47 @@ download()
     printf "downloading ...\n"
     download_status=1
 
-    curl -O "$source1/$file1" --output-dir "$download_location"
-    #curl -O "$source1/$file1"
+    #curl -O "$source1/$file1" --continue-at - --output-dir "$download_location"
+    ## curl: (33) HTTP server doesn't seem to support byte ranges. Cannot resume.
+
+    wget "$source1/$file1" --continue --output-document "$download_location/$file1"
 }
 
 
-sha256_checksum_verification() {
+download_soll() {
+
+    ## get iso checksum from sha256sums.txt
+    sha256_soll=$(curl --silent --show-error $source1/sha256sums.txt | grep $file1 | cut -d ' ' -f 1)
+    #sha1_soll=$(curl -s $source1/sha1sums.txt | grep $file1 | cut -d ' ' -f 1)
+    printf "$sha256_soll" > $download_location/$file1.sha256_soll
+}
+
+
+derive_ist() {
+
     ## derive sha256 ist
     sha256_ist=$(openssl dgst -sha256 $download_location/$file1 | sed 's/^.*= //')
     #sha1_ist=$(openssl dgst -sha1 $file1 | sed 's/^.*= //')
     printf "$sha256_ist" > $download_location/$file1.sha256_ist
+}
 
+
+sha256_checksum_verification() {
+
+    derive_ist
     ## derive sha256 soll
-    if [[ $download_status == 1 ]]; then
+    #if [[ $download_status == 1 ]]; then
 
-	## get iso checksum from sha256sums.txt
-	sha256_soll=$(curl --silent --show-error $source1/sha256sums.txt | grep $file1 | cut -d ' ' -f 1)
-	#sha1_soll=$(curl -s $source1/sha1sums.txt | grep $file1 | cut -d ' ' -f 1)
-	printf "$sha256_soll" > $download_location/$file1.sha256_soll
+    #	## get iso checksum from sha256sums.txt
+    #	sha256_soll=$(curl --silent --show-error $source1/sha256sums.txt | grep $file1 | cut -d ' ' -f 1)
+    #	#sha1_soll=$(curl -s $source1/sha1sums.txt | grep $file1 | cut -d ' ' -f 1)
+    #	printf "$sha256_soll" > $download_location/$file1.sha256_soll
 
-    else
+    #else
 
-	sha256_soll=$(cat $download_location/$file1.sha256_soll)
+#	sha256_soll=$(cat $download_location/$file1.sha256_soll)
 
-    fi
+    #fi
 
     ## report to human
     echo
@@ -341,7 +365,8 @@ main()
     check_target_dev
     internet_connection
     configuring_mirrorlist
-    download
+    download_soll
+    download_iso
     sha256_checksum_verification
     info_and_warning
     write_to_usb
