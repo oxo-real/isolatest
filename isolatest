@@ -59,12 +59,13 @@ initial_release='2019'
 ## hardcoded variables
 # initialization
 
+ping_target='9.9.9.9'
 download_location="$XDG_DATA_HOME/c/download"
 target_device="$1"
-mc_abbr="NL"
-mirror_amount="5"
-mirror_country="Sweden,Netherlands"
-arch_mirrorlist="https://www.archlinux.org/mirrorlist/?country=$mc_abbr&protocol=http&protocol=https&ip_version=4"
+mc_abbr='NL'
+mirror_amount='5'
+mirror_country='Sweden,Netherlands'
+arch_mirrorlist='https://www.archlinux.org/mirrorlist/?country=$mc_abbr&protocol=http&protocol=https&ip_version=4'
 
 tmp_loc="$XDG_CACHE_HOME/temp/isolatest"
 # packages in arch linux live system (isolatest)
@@ -122,7 +123,10 @@ check_target_dev()
 
 internet_connection()
 {
-    if [ -z $(ping -q -w 2 -c 1 9.9.9.9 | grep -i unreachable) ]; then
+    ping -q -w 2 -c 1 $ping_target
+    network_avail="$?"
+
+    if [[ "$network_avail" -eq 0 ]]; then
 
 	printf "internet connection detected via $(ip r | grep default | cut -d ' ' -f 3)\n"
 
@@ -239,11 +243,13 @@ sha256_checksum_verification() {
     #fi
 
     ## report to human
-    echo
+    #echo
     printf "iso image checksum comparison:\n"
     printf "source soll: $source1/sha256sums.txt\n"
+    echo
     printf "soll sha256: $sha256_soll\n"
     printf "ist  sha256: $sha256_ist\n"
+    echo
 
     ## checksum comparison and set status
     [ "$sha256_soll" = "$sha256_ist" ] || checksum=0 # no checksum match
