@@ -85,7 +85,7 @@ header()
 }
 
 
-validate_priviledges()
+validate_privileges()
 {
     sudo -v
 }
@@ -370,7 +370,7 @@ main()
 {
     header
     sourcing
-    validate_priviledges
+    validate_privileges
     check_target_dev
     internet_connection
     configuring_mirrorlist
